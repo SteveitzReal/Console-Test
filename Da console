@@ -1,0 +1,124 @@
+-- LocalScript (in StarterPlayerScripts)
+
+-- Services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local SoundService = game:GetService("SoundService")
+
+-- Create RemoteEvent
+local messageEvent = Instance.new("RemoteEvent")
+messageEvent.Name = "MessageEvent"
+messageEvent.Parent = ReplicatedStorage
+
+-- Create Sound
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://5044897021"
+sound.Volume = 1
+sound.Looped = false
+sound.Parent = SoundService
+sound:Play()
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SteveGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Create Intro Black Bar
+local blackBar = Instance.new("Frame")
+blackBar.Size = UDim2.new(1, 0, 0.1, 0)
+blackBar.Position = UDim2.new(0, 0, 0, 0)
+blackBar.BackgroundColor3 = Color3.new(0, 0, 0)
+blackBar.BorderSizePixel = 0
+blackBar.Parent = screenGui
+
+-- Intro Text
+local introText = Instance.new("TextLabel")
+introText.Text = "Made by Steve"
+introText.TextScaled = true
+introText.Font = Enum.Font.SourceSansBold
+introText.TextColor3 = Color3.new(1, 1, 1)
+introText.Size = UDim2.new(1, 0, 1, 0)
+introText.BackgroundTransparency = 1
+introText.Parent = blackBar
+
+-- Fade out animation (Intro)
+wait(2)
+for i = 0, 1, 0.05 do
+	blackBar.BackgroundTransparency = i
+	introText.TextTransparency = i
+	wait(0.05)
+end
+blackBar:Destroy()
+
+-- Create Input Box
+local inputBox = Instance.new("TextBox")
+inputBox.Size = UDim2.new(0.4, 0, 0.1, 0)
+inputBox.Position = UDim2.new(0.3, 0, 0.85, 0)
+inputBox.PlaceholderText = "Type something..."
+inputBox.Text = ""
+inputBox.TextScaled = true
+inputBox.Font = Enum.Font.SourceSans
+inputBox.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+inputBox.TextColor3 = Color3.new(1, 1, 1)
+inputBox.Parent = screenGui
+
+-- Display Label
+local displayText = Instance.new("TextLabel")
+displayText.Size = UDim2.new(1, 0, 0.2, 0)
+displayText.Position = UDim2.new(0, 0, 0.3, 0)
+displayText.Text = ""
+displayText.TextScaled = true
+displayText.Font = Enum.Font.SourceSansBold
+displayText.TextColor3 = Color3.new(1, 1, 1)
+displayText.BackgroundTransparency = 1
+displayText.Parent = screenGui
+
+-- Fade Out Animation for the Message (when typed)
+local function fadeOutMessage()
+	for i = 0, 1, 0.05 do
+		displayText.TextTransparency = i
+		wait(0.05)
+	end
+	displayText.Text = ""  -- Clear the message after fading out
+end
+
+-- When Enter is pressed, send the message to the server and display it in the black bar
+inputBox.FocusLost:Connect(function(enterPressed)
+	if enterPressed then
+		local message = inputBox.Text
+		if message ~= "" then
+			-- Print message to the console
+			print("Message from " .. Players.LocalPlayer.Name .. ": " .. message)
+			
+			-- Display message in the black bar
+			displayText.Text = message
+
+			-- Send the message to the server
+			messageEvent:FireServer(message)
+
+			-- Fade out the previous message after 3 seconds
+			wait(3)
+			fadeOutMessage()
+
+			-- Clear the input box
+			inputBox.Text = ""
+		end
+	end
+end)
+
+-- Listen for messages from the server and display them in the black bar
+messageEvent.OnClientEvent:Connect(function(message)
+	displayText.Text = message
+end)
+
+-- Server-side logic (this part will be added in the LocalScript as well)
+local function handleMessageEvent(player, message)
+    -- Broadcast message to all players
+    for _, plr in pairs(Players:GetPlayers()) do
+        messageEvent:FireClient(plr, message)
+    end
+end
+
+-- Listen for the message from the client and broadcast it to all players
+messageEvent.OnServerEvent:Connect(handleMessageEvent)
